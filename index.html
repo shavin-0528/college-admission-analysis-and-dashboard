@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>College Admission Data Analysis and Dashboard — Phase 2</title>
+  
+  <!-- SEO & Metadata -->
+  <meta name="description" content="Interactive analysis of student admission data using data preprocessing, feature engineering and exploratory data analysis. Principles of Data Science — Phase 2.">
+  <meta name="keywords" content="College Admission, Data Preprocessing, EDA, Feature Engineering, Data Science Dashboard, IQR Capping">
+  <meta name="author" content="Principles of Data Science — Phase 2">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Plotly.js CDN -->
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ====================================================================
+       12. FILTER PANEL (SIDEBAR)
+       ==================================================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <i class="lucide-graduation-cap"></i>
+        </div>
+        <span>Admission Analytics</span>
+      </div>
+      <div class="sidebar-tagline">Phase 2 — College Project Review</div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-header-row">
+        <div class="filter-title">
+          <i class="lucide-sliders-horizontal"></i>
+          <span>Data Filters</span>
+        </div>
+        <button class="btn-reset" id="btnResetFilters" title="Reset all filters to default">
+          <i class="lucide-rotate-ccw"></i>
+          <span>Reset</span>
+        </button>
+      </div>
+
+      <!-- Gender Filter -->
+      <div class="filter-group">
+        <label class="filter-label" for="genderSelect">
+          <span>Gender</span>
+        </label>
+        <select class="select-custom" id="genderSelect">
+          <option value="All">All Genders</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <!-- State Filter -->
+      <div class="filter-group">
+        <label class="filter-label" for="stateSelect">
+          <span>State</span>
+        </label>
+        <select class="select-custom" id="stateSelect">
+          <option value="All">All States (10)</option>
+          <option value="California">California</option>
+          <option value="Florida">Florida</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Illinois">Illinois</option>
+          <option value="New York">New York (Highest Rate)</option>
+          <option value="North Carolina">North Carolina</option>
+          <option value="Ohio">Ohio</option>
+          <option value="Pennsylvania">Pennsylvania</option>
+          <option value="Texas">Texas</option>
+          <option value="Virginia">Virginia</option>
+        </select>
+      </div>
+
+      <!-- Admission Status Filter -->
+      <div class="filter-group">
+        <label class="filter-label">
+          <span>Admission Status</span>
+        </label>
+        <div class="filter-status-radios">
+          <input type="radio" name="admission_status" id="statusAll" value="All" class="status-radio-input" checked>
+          <label for="statusAll" class="status-radio-label">All</label>
+
+          <input type="radio" name="admission_status" id="statusAdmitted" value="1" class="status-radio-input">
+          <label for="statusAdmitted" class="status-radio-label">Admitted</label>
+
+          <input type="radio" name="admission_status" id="statusRejected" value="0" class="status-radio-input">
+          <label for="statusRejected" class="status-radio-label">Rejected</label>
+        </div>
+      </div>
+
+      <!-- Age Range Filter -->
+      <div class="filter-group">
+        <div class="filter-label">
+          <span>Max Age</span>
+          <span class="filter-val-badge" id="ageVal">22 yrs</span>
+        </div>
+        <div class="range-slider-container">
+          <input type="range" class="range-slider" id="ageSlider" min="16" max="22" value="22" step="1">
+        </div>
+      </div>
+
+      <!-- GPA Range Filter -->
+      <div class="filter-group">
+        <div class="filter-label">
+          <span>Min GPA</span>
+          <span class="filter-val-badge" id="gpaVal">1.84 GPA</span>
+        </div>
+        <div class="range-slider-container">
+          <input type="range" class="range-slider" id="gpaSlider" min="1.84" max="4.00" value="1.84" step="0.05">
+        </div>
+      </div>
+
+      <!-- SAT Score Range Filter -->
+      <div class="filter-group">
+        <div class="filter-label">
+          <span>Min SAT Score</span>
+          <span class="filter-val-badge" id="satVal">508 pts</span>
+        </div>
+        <div class="range-slider-container">
+          <input type="range" class="range-slider" id="satSlider" min="508" max="1600" value="508" step="10">
+        </div>
+      </div>
+
+      <!-- ACT Score Range Filter -->
+      <div class="filter-group">
+        <div class="filter-label">
+          <span>Min ACT Score</span>
+          <span class="filter-val-badge" id="actVal">5.5 pts</span>
+        </div>
+        <div class="range-slider-container">
+          <input type="range" class="range-slider" id="actSlider" min="5.5" max="36.0" value="5.5" step="0.5">
+        </div>
+      </div>
+
+      <!-- Academic Score Range Filter -->
+      <div class="filter-group">
+        <div class="filter-label">
+          <span>Min Academic Score</span>
+          <span class="filter-val-badge" id="acadVal">33.4</span>
+        </div>
+        <div class="range-slider-container">
+          <input type="range" class="range-slider" id="acadSlider" min="33.4" max="100.0" value="33.4" step="1.0">
+        </div>
+      </div>
+
+      <!-- Application Score Range Filter -->
+      <div class="filter-group">
+        <div class="filter-label">
+          <span>Min Application Score</span>
+          <span class="filter-val-badge" id="appVal">54.2</span>
+        </div>
+        <div class="range-slider-container">
+          <input type="range" class="range-slider" id="appSlider" min="54.2" max="100.0" value="54.2" step="1.0">
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ====================================================================
+       MAIN CONTENT CONTAINER
+       ==================================================================== -->
+  <main class="main-content">
+
+    <!-- ==================================================================
+         1. HEADER
+         ================================================================== -->
+    <header class="app-header">
+      <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Filters Sidebar">
+          <i class="lucide-menu"></i>
+        </button>
+        <div class="header-titles">
+          <h1>
+            <i class="lucide-bar-chart-2"></i>
+            College Admission Data Analysis & Dashboard
+          </h1>
+          <div class="header-subtitle">
+            <span>Phase 2 — Data Preprocessing & Exploratory Data Analysis</span>
+            <span class="badge badge-primary">Phase 2 Completed</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" onclick="window.print()" title="Print Dashboard / Export PDF">
+          <i class="lucide-printer"></i>
+          <span>Print / Export</span>
+        </button>
+        <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Dark / Light Theme" title="Toggle Theme">
+          <i class="lucide-sun"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================================================================
+         15. NAVIGATION (SUB-NAV TABS)
+         ================================================================== -->
+    <nav class="sub-nav" aria-label="Dashboard Sections">
+      <a href="#overview" class="sub-nav-link active">Dashboard</a>
+      <a href="#overview" class="sub-nav-link">Overview</a>
+      <a href="#academic" class="sub-nav-link">Academic Analysis</a>
+      <a href="#application" class="sub-nav-link">Application Analysis</a>
+      <a href="#extracurricular" class="sub-nav-link">Extracurricular Analysis</a>
+      <a href="#state-analysis" class="sub-nav-link">State Analysis</a>
+      <a href="#correlation" class="sub-nav-link">Correlation</a>
+      <a href="#multivariate" class="sub-nav-link">Multivariate</a>
+      <a href="#data-quality" class="sub-nav-link">Data Quality</a>
+      <a href="#insights" class="sub-nav-link">Insights</a>
+      <a href="#search" class="sub-nav-link">Student Search</a>
+    </nav>
+
+    <!-- ==================================================================
+         DASHBOARD BODY
+         ================================================================== -->
+    <div class="dashboard-body">
+
+      <!-- Short Project Description Banner -->
+      <div class="card" style="padding:14px 20px; background: rgba(99, 102, 241, 0.08); border-color: rgba(99, 102, 241, 0.25);">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:34px; height:34px; border-radius:8px; background:var(--accent-primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+            <i class="lucide-info"></i>
+          </div>
+          <div>
+            <div style="font-weight:700; font-size:0.92rem; color:var(--text-primary);">Phase 2 Project Context & Scope</div>
+            <div style="font-size:0.82rem; color:var(--text-secondary);">
+              Interactive analysis of student admission data using data preprocessing, feature engineering and exploratory data analysis. Built strictly on 1,000,000 student records across 31 processed features.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================
+           2. KPI CARDS (7 Attractive Cards)
+           ================================================================ -->
+      <section id="kpis">
+        <div class="kpi-grid">
+          
+          <!-- Card 1: Total Students -->
+          <div class="kpi-card kpi-highlight-purple">
+            <div class="kpi-header">
+              <span class="kpi-label">Total Students</span>
+              <div class="kpi-icon"><i class="lucide-users"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiTotalStudents">1,000,000</div>
+            <div class="kpi-subtext">
+              <i class="lucide-database"></i>
+              <span>Dataset size</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Admission Rate -->
+          <div class="kpi-card kpi-highlight-success">
+            <div class="kpi-header">
+              <span class="kpi-label">Admission Rate</span>
+              <div class="kpi-icon" style="color:var(--admitted-color);"><i class="lucide-check-circle-2"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiAdmissionRate" style="color:var(--admitted-color);">88.13%</div>
+            <div class="kpi-subtext">
+              <i class="lucide-trending-up"></i>
+              <span>881,292 Admitted</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Average Academic Score -->
+          <div class="kpi-card kpi-highlight-cyan">
+            <div class="kpi-header">
+              <span class="kpi-label">Avg Academic Score</span>
+              <div class="kpi-icon" style="color:var(--accent-cyan);"><i class="lucide-award"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiAvgAcademic">70.96</div>
+            <div class="kpi-subtext">
+              <span>Formula: GPA + SAT + ACT</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Average Application Score -->
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-label">Avg Application Score</span>
+              <div class="kpi-icon"><i class="lucide-file-text"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiAvgApplication">79.36</div>
+            <div class="kpi-subtext">
+              <span>Essay + Rec + Interview + Att</span>
+            </div>
+          </div>
+
+          <!-- Card 5: Processed Features -->
+          <div class="kpi-card kpi-highlight-purple">
+            <div class="kpi-header">
+              <span class="kpi-label">Processed Features</span>
+              <div class="kpi-icon"><i class="lucide-columns-3"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiFeatures">31</div>
+            <div class="kpi-subtext">
+              <span>20 Original → 31 Processed</span>
+            </div>
+          </div>
+
+          <!-- Card 6: Missing Values -->
+          <div class="kpi-card kpi-highlight-success">
+            <div class="kpi-header">
+              <span class="kpi-label">Missing Values</span>
+              <div class="kpi-icon" style="color:var(--admitted-color);"><i class="lucide-shield-check"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiMissing" style="color:var(--admitted-color);">0</div>
+            <div class="kpi-subtext">
+              <span>100% complete data</span>
+            </div>
+          </div>
+
+          <!-- Card 7: Duplicate Records -->
+          <div class="kpi-card kpi-highlight-success">
+            <div class="kpi-header">
+              <span class="kpi-label">Duplicate Records</span>
+              <div class="kpi-icon" style="color:var(--admitted-color);"><i class="lucide-copy-check"></i></div>
+            </div>
+            <div class="kpi-value" id="kpiDuplicates" style="color:var(--admitted-color);">0</div>
+            <div class="kpi-subtext">
+              <span>0 duplicates found</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================================================================
+           3. ADMISSION OVERVIEW
+           ================================================================ -->
+      <section id="overview">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-pie-chart"></i></div>
+              <span>Admission Overview</span>
+            </div>
+            <div class="section-desc">Overall admission proportion and performance comparison between admitted and non-admitted students.</div>
+          </div>
+        </div>
+
+        <div class="overview-stats-container">
+          
+          <!-- Chart A: Admission Status Distribution Donut -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="lucide-circle-dot"></i>
+                <span>Admission Status Distribution</span>
+              </div>
+              <span class="badge badge-primary">Target Variable</span>
+            </div>
+            <div class="chart-wrapper" id="chartAdmissionDonut"></div>
+          </div>
+
+          <!-- Chart B: Average Scores by Admission Status Bar -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="lucide-bar-chart"></i>
+                <span>Average Scores by Admission Status</span>
+              </div>
+              <div class="card-actions">
+                <span class="badge badge-success">Admitted vs Not Admitted</span>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+              <div class="metric-comparison-row" style="margin-bottom:0;">
+                <div>
+                  <div class="metric-comp-title">Academic Score</div>
+                  <div style="font-size:0.72rem; color:var(--text-muted);">GPA, SAT, ACT composite</div>
+                </div>
+                <div class="metric-comp-badges">
+                  <span class="score-badge admitted" id="acadAdmittedBadge">71.84</span>
+                  <span class="score-badge rejected" id="acadNotAdmittedBadge">64.41</span>
+                </div>
+              </div>
+
+              <div class="metric-comparison-row" style="margin-bottom:0;">
+                <div>
+                  <div class="metric-comp-title">Application Score</div>
+                  <div style="font-size:0.72rem; color:var(--text-muted);">Essay, Rec, Interview, Att</div>
+                </div>
+                <div class="metric-comp-badges">
+                  <span class="score-badge admitted" id="appAdmittedBadge">79.72</span>
+                  <span class="score-badge rejected" id="appNotAdmittedBadge">76.68</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-wrapper" id="chartScoresComparison"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================================================================
+           4. ACADEMIC PERFORMANCE
+           ================================================================ -->
+      <section id="academic">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-book-open"></i></div>
+              <span>Academic Performance Distributions</span>
+            </div>
+            <div class="section-desc">Distributions of composite academic score, high school GPA, SAT score, and ACT score across students.</div>
+          </div>
+        </div>
+
+        <div class="chart-grid-4">
+          <!-- Hist A: Academic Score -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Academic Score</div>
+              <span class="badge badge-primary">Engineered</span>
+            </div>
+            <div class="chart-wrapper" id="chartAcademicScoreHist"></div>
+          </div>
+
+          <!-- Hist B: High School GPA -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">High School GPA</div>
+              <span class="badge badge-primary">1.84 – 4.00</span>
+            </div>
+            <div class="chart-wrapper" id="chartGpaHist"></div>
+          </div>
+
+          <!-- Hist C: SAT Score -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">SAT Score</div>
+              <span class="badge badge-primary">508 – 1,600</span>
+            </div>
+            <div class="chart-wrapper" id="chartSatHist"></div>
+          </div>
+
+          <!-- Hist D: ACT Score -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">ACT Score</div>
+              <span class="badge badge-primary">5.5 – 36.0</span>
+            </div>
+            <div class="chart-wrapper" id="chartActHist"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================
+           5. APPLICATION PERFORMANCE
+           ================================================================ -->
+      <section id="application">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-clipboard-check"></i></div>
+              <span>Application Performance</span>
+            </div>
+            <div class="section-desc">Evaluation of essay scores, recommendation letters, interview evaluations, and attendance rates.</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="lucide-git-compare"></i>
+              <span>Application Performance by Admission Status</span>
+            </div>
+            <span class="badge badge-primary">Component Breakdown</span>
+          </div>
+          <div class="chart-wrapper chart-lg" id="chartAppComparison"></div>
+        </div>
+
+        <div class="chart-grid-4">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Essay Score</div>
+              <span class="badge badge-primary">42.6 – 100.0</span>
+            </div>
+            <div class="chart-wrapper" id="chartEssayHist"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Recommendation Score</div>
+              <span class="badge badge-primary">51.2 – 100.0</span>
+            </div>
+            <div class="chart-wrapper" id="chartRecHist"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Interview Score</div>
+              <span class="badge badge-primary">32.35 – 100.0</span>
+            </div>
+            <div class="chart-wrapper" id="chartInterviewHist"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Attendance Rate (%)</div>
+              <span class="badge badge-primary">76.0% – 100.0%</span>
+            </div>
+            <div class="chart-wrapper" id="chartAttendanceHist"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================
+           6. EXTRACURRICULAR ANALYSIS
+           ================================================================ -->
+      <section id="extracurricular">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-activity"></i></div>
+              <span>Extracurricular Analysis</span>
+            </div>
+            <div class="section-desc">Analysis of extracurricular participation, volunteer hours, coding projects, and leadership positions.</div>
+          </div>
+        </div>
+
+        <div class="chart-grid-2">
+          <!-- Chart 1: Extracurricular Score vs Admission Status -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="lucide-sparkles"></i>
+                <span>Extracurricular Score vs Admission Status</span>
+              </div>
+              <span class="badge badge-primary">Sum of 4 Categories</span>
+            </div>
+            <div class="chart-wrapper" id="chartExtracurricularStatus"></div>
+          </div>
+
+          <!-- Chart 2: Volunteer Hours vs Admission Status -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="lucide-heart-handshake"></i>
+                <span>Volunteer Hours vs Admission Status</span>
+              </div>
+              <span class="badge badge-primary">Capped to 223 hrs</span>
+            </div>
+            <div class="chart-wrapper" id="chartVolunteerHoursStatus"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================
+           7. STATE-WISE ANALYSIS
+           ================================================================ -->
+      <section id="state-analysis">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-map-pin"></i></div>
+              <span>State-wise Admission Rate</span>
+            </div>
+            <div class="section-desc">Comparative admission rates across all 10 states in the dataset. New York recorded highest rate (88.29%).</div>
+          </div>
+        </div>
+
+        <div class="state-grid-layout">
+          <!-- Interactive Bar Chart -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="lucide-bar-chart-3"></i>
+                <span>State-wise Admission Rate</span>
+              </div>
+              <span class="badge badge-success">New York: 88.29%</span>
+            </div>
+            <div class="chart-wrapper chart-lg" id="chartStateWise"></div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px; font-style:italic;">
+              * Note: New York recorded the highest admission rate in this dataset analysis (88.29%). This is strictly an observed data finding, not a qualitative ranking of colleges.
+            </div>
+          </div>
+
+          <!-- State Table -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="lucide-table"></i>
+                <span>State Summary Table</span>
+              </div>
+              <span class="badge badge-primary">10 States</span>
+            </div>
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>State</th>
+                    <th>Rate</th>
+                    <th>Students</th>
+                    <th>Acad</th>
+                    <th>App</th>
+                  </tr>
+                </thead>
+                <tbody id="stateTableBody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================
+           8. CORRELATION ANALYSIS
+           ================================================================ -->
+      <section id="correlation">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-network"></i></div>
+              <span>Feature Correlation Heatmap</span>
+            </div>
+            <div class="section-desc">Interactive Pearson correlation matrix across 19 numerical features using diverging color palette.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="lucide-grid"></i>
+              <span>Feature Correlation Heatmap</span>
+            </div>
+            <span class="badge badge-primary">19 Features</span>
+          </div>
+          <div class="chart-wrapper chart-xl" id="chartCorrelationHeatmap"></div>
+        </div>
+      </section>
+
+      <!-- ================================================================
+           9. MULTIVARIATE ANALYSIS
+           ================================================================ -->
+      <section id="multivariate">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-scatter-chart"></i></div>
+              <span>Multivariate Analysis</span>
+            </div>
+            <div class="section-desc">Interactive scatter plots examining multi-feature relationships and admission clustering.</div>
+          </div>
+        </div>
+
+        <div class="chart-grid-3">
+          <!-- Scatter A: Academic vs Application -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Academic vs Application</div>
+              <span class="badge badge-primary">Color: Status</span>
+            </div>
+            <div class="chart-wrapper" id="chartScatterAcadVsApp"></div>
+          </div>
+
+          <!-- Scatter B: SAT vs GPA -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">SAT Score vs GPA</div>
+              <span class="badge badge-primary">Color: Status</span>
+            </div>
+            <div class="chart-wrapper" id="chartScatterSatVsGpa"></div>
+          </div>
+
+          <!-- Scatter C: Academic vs Extracurricular -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Academic vs Extracurricular</div>
+              <span class="badge badge-primary">Color: Status</span>
+            </div>
+            <div class="chart-wrapper" id="chartScatterAcadVsExtracurricular"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================
+           10. DATA QUALITY SECTION
+           ================================================================ -->
+      <section id="data-quality">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-layers"></i></div>
+              <span>Data Quality & Preprocessing</span>
+            </div>
+            <div class="section-desc">Pipeline overview, IQR outlier capping results, and mathematical feature engineering specifications.</div>
+          </div>
+        </div>
+
+        <!-- Pipeline Flow Visualization -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="lucide-workflow"></i>
+              <span>Preprocessing Pipeline</span>
+            </div>
+            <span class="badge badge-primary">Phase 2 Architecture</span>
+          </div>
+          <div class="pipeline-flow" id="pipelineContainer">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Outlier Treatment Table -->
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="lucide-scissors"></i>
+              <span>Outlier Handling using IQR Capping</span>
+            </div>
+            <span class="badge badge-primary">0 Records Deleted</span>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Capped Outliers</th>
+                  <th>% of Data</th>
+                  <th>Min Original</th>
+                  <th>Max Original</th>
+                  <th>Capped Boundaries [Q1-1.5IQR, Q3+1.5IQR]</th>
+                </tr>
+              </thead>
+              <tbody id="outlierTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Feature Engineering Formulas -->
+        <div class="formula-card-grid">
+          
+          <div class="formula-card">
+            <div class="formula-card-title">
+              <i class="lucide-calculator"></i>
+              <span>1. Academic Score</span>
+            </div>
+            <pre class="formula-code">(high_school_gpa / 4.0 * 100) * 0.30
++ (sat_score / 1600 * 100) * 0.40
++ (act_score / 36 * 100) * 0.30</pre>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">Standardizes GPA, SAT, and ACT into a balanced 0–100 scale.</div>
+          </div>
+
+          <div class="formula-card">
+            <div class="formula-card-title">
+              <i class="lucide-calculator"></i>
+              <span>2. Application Score</span>
+            </div>
+            <pre class="formula-code">essay_score * 0.25
++ recommendation_score * 0.25
++ interview_score * 0.25
++ attendance_rate * 0.25</pre>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">Combines qualitative evaluation components and discipline metrics.</div>
+          </div>
+
+          <div class="formula-card">
+            <div class="formula-card-title">
+              <i class="lucide-calculator"></i>
+              <span>3. Extracurricular Score</span>
+            </div>
+            <pre class="formula-code">extracurricular_count
++ leadership_positions
++ coding_projects
++ online_certifications</pre>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">Aggregate index of holistic engagement and technical pursuits.</div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================================================================
+           11. KEY INSIGHTS
+           ================================================================ -->
+      <section id="insights">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-lightbulb"></i></div>
+              <span>Key Insights</span>
+            </div>
+            <div class="section-desc">Key findings observed in the Phase 2 exploratory data analysis.</div>
+          </div>
+        </div>
+
+        <div class="insights-grid">
+          
+          <div class="insight-card">
+            <div class="insight-icon"><i class="lucide-check-circle"></i></div>
+            <div class="insight-body">
+              <div class="insight-number">Insight 01</div>
+              <div class="insight-text">88.13% of the students in the dataset have an admission status of Admitted.</div>
+              <div class="insight-context">Observed in this dataset</div>
+            </div>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon"><i class="lucide-graduation-cap"></i></div>
+            <div class="insight-body">
+              <div class="insight-number">Insight 02</div>
+              <div class="insight-text">The average academic score of admitted students is 71.84, compared with 64.41 for non-admitted students.</div>
+              <div class="insight-context">Observed in this dataset</div>
+            </div>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon"><i class="lucide-file-text"></i></div>
+            <div class="insight-body">
+              <div class="insight-number">Insight 03</div>
+              <div class="insight-text">The average application score of admitted students is 79.72, compared with 76.68 for non-admitted students.</div>
+              <div class="insight-context">Observed in this dataset</div>
+            </div>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon"><i class="lucide-map-pin"></i></div>
+            <div class="insight-body">
+              <div class="insight-number">Insight 04</div>
+              <div class="insight-text">New York recorded the highest state-wise admission rate in this dataset at 88.29%.</div>
+              <div class="insight-context">Observed in this dataset</div>
+            </div>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon"><i class="lucide-database"></i></div>
+            <div class="insight-body">
+              <div class="insight-number">Insight 05</div>
+              <div class="insight-text">The dataset contained no missing values and no duplicate records across 1,000,000 entries.</div>
+              <div class="insight-context">Observed in this dataset</div>
+            </div>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon"><i class="lucide-shield-check"></i></div>
+            <div class="insight-body">
+              <div class="insight-number">Insight 06</div>
+              <div class="insight-text">Outliers in selected numerical variables were handled using IQR capping without data loss.</div>
+              <div class="insight-context">Observed in this dataset</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-top:16px; font-size:0.75rem; color:var(--text-muted); background:var(--bg-elevated); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--border-light);">
+          <strong>Disclaimer:</strong> Insights presented above represent observations strictly derived from this dataset during Phase 2 exploratory data analysis and are not universal assertions about college admissions generally. Correlation does not imply causation.
+        </div>
+      </section>
+
+      <!-- ================================================================
+           13. SEARCH (STUDENT LOOKUP)
+           ================================================================ -->
+      <section id="search">
+        <div class="section-header">
+          <div>
+            <div class="section-title">
+              <div class="section-title-icon"><i class="lucide-search"></i></div>
+              <span>Student Search</span>
+            </div>
+            <div class="section-desc">Search individual student profile by ID (1 to 1,000,000) to inspect all original and derived features.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="search-bar-container">
+            <div class="search-input-wrapper">
+              <i class="lucide-search search-icon-pos"></i>
+              <input type="number" class="search-input" id="studentSearchInput" placeholder="Enter Student ID (e.g. 1, 2, 3, 4, 5...)" min="1" max="1000000" value="1">
+            </div>
+            <button class="btn btn-primary" id="btnSearchStudent">
+              <i class="lucide-search"></i>
+              <span>Search</span>
+            </button>
+          </div>
+
+          <div class="sample-chips-row">
+            <span class="chip-label">Try Examples:</span>
+            <button class="chip-btn" data-id="1">Student #1</button>
+            <button class="chip-btn" data-id="2">Student #2</button>
+            <button class="chip-btn" data-id="3">Student #3</button>
+            <button class="chip-btn" data-id="4">Student #4</button>
+            <button class="chip-btn" data-id="5">Student #5</button>
+            <button class="chip-btn" data-id="1042">Student #1042</button>
+          </div>
+
+          <!-- Result Container -->
+          <div id="studentSearchResult">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ==================================================================
+         16. FOOTER
+         ================================================================== -->
+    <footer class="app-footer">
+      <div class="footer-highlight">College Admission Data Analysis and Dashboard</div>
+      <div>Principles of Data Science — Phase 2</div>
+      <div>Data preprocessing and EDA completed using Python.</div>
+    </footer>
+
+  </main>
+</div>
+
+<!-- Embedded Dataset Bundle for Standalone Offline Execution -->
+<script src="static/js/precomputed_bundle.js"></script>
+
+<!-- Application Engine -->
+<script src="static/js/dashboard.js"></script>
+
+<script>
+  // Initialize Lucide Icons
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+</script>
+
+</body>
+</html>
